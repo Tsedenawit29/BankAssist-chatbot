@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  bankbot:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      - chroma_storage:/app/chroma_storage
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    env_file:
+      - .env
+
+volumes:
+  chroma_storage: 
