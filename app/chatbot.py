@@ -53,15 +53,20 @@ def get_next_step(user_input, step, user_data):
     elif step == "confirm":
         if "yes" in user_input.lower():
             return "submitted", f"""
-        🎉 **Application Submitted Successfully!**
+        🎉 **Bank Account Creation Successfully Submitted!**
         
-        Thank you, {user_data['name']}! Your {user_data['account_type']} application has been received.
+        Thank you, {user_data['name']}! Your {user_data['account_type']} creation request has been successfully submitted to our system.
         
-        📧 You'll receive a confirmation email at {user_data['contact']} within 24 hours.
-        📞 Our team will contact you within 2-3 business days to complete the process.
-        🏦 Your new account will be ready for use once verification is complete.
+        📞 **We will contact you at {user_data['contact']}** within 2-3 business days to complete the account setup process.
+        📧 Please check your email or phone for updates and further instructions.
         
-        Is there anything else I can help you with today?
+        **What happens next:**
+        • Our team will review your application
+        • You'll receive a confirmation message at {user_data['contact']}
+        • We'll guide you through document verification
+        • Your new {user_data['account_type']} will be activated once complete
+        
+        Thank you for choosing our bank! Is there anything else I can help you with today?
         """
         else:
             return "intent", "No problem! Let's start fresh. 🔄\n\nWhat would you like to do? You can ask me to open a new account or help you with other banking services."

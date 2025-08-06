@@ -152,16 +152,36 @@ if submitted and st.session_state.user_input.strip():
     else:
         # Get next step and bot response
         next_step, bot_response = get_next_step(current_input, current_step, user_data)
-        # Update session state
-        st.session_state.step = next_step
-        # Save data if application is submitted
-        if next_step == "submitted":
-            save_user_data(user_data)
-            # Reset for new conversation
-            st.session_state.step = "intent"
-            st.session_state.user_data = {}
-        # Add bot response to chat
+        
+        # Add bot response to chat first
         st.session_state.messages.append({"role": "assistant", "content": bot_response})
+        
+        # Handle submission
+        if next_step == "submitted":
+            try:
+                # Save data to database
+                save_user_data(user_data)
+                # Add success confirmation message
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": "✅ **Bank account application data saved successfully!** Your information has been securely stored in our system."
+                })
+                # Reset for new conversation after a brief delay
+                st.session_state.step = "intent"
+                st.session_state.user_data = {}
+            except Exception as e:
+                # Handle any database errors
+                st.session_state.messages.append({
+                    "role": "assistant", 
+                    "content": f"❌ **Error saving data:** {str(e)}. Please try again or contact support."
+                })
+                # Don't reset on error, allow user to try again
+        else:
+            # Update session state for non-submission steps
+            st.session_state.step = next_step
+            # Clear user data if user said "no" to confirmation and we're restarting
+            if current_step == "confirm" and next_step == "intent":
+                st.session_state.user_data = {}
     # No need to clear st.session_state.user_input here; clear_on_submit handles it
     st.rerun()
 
