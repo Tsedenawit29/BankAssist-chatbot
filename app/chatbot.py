@@ -1,3 +1,6 @@
+# Import the validation functions from the new utils file
+from utils import is_valid_email, is_valid_phone
+
 def get_next_step(user_input, step, user_data):
     if step == "intent":
         if "open" in user_input.lower() and "account" in user_input.lower():
@@ -32,23 +35,29 @@ def get_next_step(user_input, step, user_data):
         return "contact", "Excellent! 📞\n\nPlease provide your phone number or email address for account notifications:"
 
     elif step == "contact":
-        user_data["contact"] = user_input.strip()
-        return "confirm", f"""
-        📋 **Application Summary**
-        
-        Please review your details:
-        
-        👤 **Name:** {user_data['name']}
-        🏦 **Account Type:** {user_data['account_type']}
-        📍 **Address:** {user_data['address']}
-        🆔 **ID Number:** {user_data['id']}
-        📞 **Contact:** {user_data['contact']}
-        
-        ✅ **Type 'yes' to submit your application**
-        ❌ **Type 'no' to start over**
-        
-        Is everything correct?
-        """
+        contact_info = user_input.strip()
+        # Use the validation functions here
+        if is_valid_email(contact_info) or is_valid_phone(contact_info):
+            user_data["contact"] = contact_info
+            return "confirm", f"""
+            📋 **Application Summary**
+            
+            Please review your details:
+            
+            👤 **Name:** {user_data['name']}
+            🏦 **Account Type:** {user_data['account_type']}
+            📍 **Address:** {user_data['address']}
+            🆔 **ID Number:** {user_data['id']}
+            📞 **Contact:** {user_data['contact']}
+            
+            ✅ **Type 'yes' to submit your application**
+            ❌ **Type 'no' to start over**
+            
+            Is everything correct?
+            """
+        else:
+            # If input is invalid, send an error message and stay on the same step
+            return "contact", "I'm sorry, that doesn't look like a valid phone number or email address. Please try again with a valid format."
 
     elif step == "confirm":
         if "yes" in user_input.lower():
