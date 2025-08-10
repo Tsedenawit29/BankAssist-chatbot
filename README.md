@@ -12,64 +12,58 @@ An AI-powered banking assistant built with Streamlit that helps users open new b
 
 ### 🛡️ **Duplicate Prevention**
 - Checks for existing phone/email before account creation
-- Basic phone number format comparison
-- Shows error message if duplicate found
+- Validates phone and email format
+- Shows error message if a duplicate contact or invalid format is found
 
-### 💬 **Chat History**
-- Saves conversations to local JSON file
-- Previous chats shown in sidebar
-- Click to reload past conversations
-- Simple chat titles from first user message
+### 💬 **New Chat Feature**
+- A **"New Chat" button** allows users to reset the conversation and start over at any time, providing a clear and simple user experience.
 
 ### 🎨 **Simple UI**
-- Streamlit interface with orange theme
+- Streamlit interface with an orange theme
 - Black chat message backgrounds
 - Input field with send button
 - Basic responsive layout
 
 ### 💾 **Data Storage**
-- ChromaDB for storing user account data
-- JSON backup files as fallback
-- Local data storage only
-- Chat history saved between sessions
+- **PostgreSQL** or **SQLite** for storing user application data
+- The application stores submitted user details in a relational database for bank employee follow-up.
+- A single `account_applications` table is used to store user information and application status.
+
+***
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- Docker (optional)
+- Docker
+- Docker Compose
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Tsedenawit29/BankAssist-chatbot.git
+   git clone [https://github.com/Tsedenawit29/BankAssist-chatbot.git](https://github.com/Tsedenawit29/BankAssist-chatbot.git)
    cd BankAssist-chatbot
-   ```
+````
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+2.  **Set up Gemini API Key and Database URL**
 
-3. **Set up Gemini API Key**
-   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create a `.env` file in the project root:
-     ```bash
-     GOOGLE_API_KEY=your_actual_api_key_here
-     ```
-   - Make sure `.env` is in your `.gitignore` file (for security)
+      - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+      - Create a `.env` file in the project root:
+        ```bash
+        GOOGLE_API_KEY=your_actual_api_key_here
+        # This URL is for local development without Docker Compose
+        # DATABASE_URL=sqlite:///bank_applications.db
+        ```
+      - Make sure `.env` is in your `.gitignore` file (for security)
 
-4. **Run the application**
-   ```bash
-   streamlit run app/main.py
-   ```
+3.  **Install dependencies**
 
-5. **Open your browser**
-   - Navigate to `http://localhost:8501`
-   - Start chatting with BankAssist! 🎉
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### 🐳 Docker Setup
+### 🐳 Docker Setup (Recommended)
 
 ```bash
 # Build and run with Docker Compose
@@ -78,6 +72,10 @@ docker-compose up --build
 # Access at http://localhost:8501
 ```
 
+This will automatically create and start both the PostgreSQL database container and the Streamlit chatbot container.
+
+-----
+
 ## 📁 Project Structure
 
 ```
@@ -85,80 +83,73 @@ BankAssist-chatbot/
 ├── app/
 │   ├── main.py          # Main Streamlit application
 │   ├── chatbot.py       # Conversation logic and flow
-│   ├── db.py            # Database operations (ChromaDB)
-│   ├── state.py         # Session state and chat history
-│   └── model.py         # AI model configuration
-├── docker-compose.yml   # Docker configuration
+│   ├── db.py            # Database operations (SQLAlchemy)
+│   └── utils.py         # Helper functions for input validation
+├── docker-compose.yml   # Docker configuration for multi-container setup
 ├── Dockerfile          # Container setup
 ├── requirements.txt    # Python dependencies
 ├── .gitignore         # Git ignore rules
 └── README.md          # Project documentation
 ```
 
+-----
+
 ## 🔧 How It Works
 
 ### Conversation Flow
-1. **Intent Recognition** - User expresses desire to open account
-2. **Account Type Selection** - Choose from Savings/Current/Business
-3. **Information Collection** - Name, address, ID, contact details
-4. **Confirmation** - Review and confirm all details
-5. **Submission** - Save to database and provide next steps
-6. **Follow-up** - Option to create additional accounts
 
-
-```
+1.  **Intent Recognition** - User expresses desire to open an account.
+2.  **Account Type Selection** - User chooses from Savings, Current, or Business.
+3.  **Information Collection** - The chatbot collects the user's name, address, ID, and contact details.
+4.  **Input Validation** - The contact information is validated for correct format (email or phone).
+5.  **Confirmation** - The user reviews and confirms all details.
+6.  **Submission** - The application data is saved to the PostgreSQL database.
+7.  **Follow-up** - A confirmation message is sent, and the user is informed that a bank employee will contact them.
 
 ### Data Persistence
-- **ChromaDB**: Primary storage for user accounts
-- **JSON Backup**: Fallback storage system
-- **Chat History**: Local JSON file storage
+
+  - The chatbot uses **SQLAlchemy** to connect to a **PostgreSQL** database.
+  - A single table, `account_applications`, stores each user's submitted data.
+  - **Data Types:** The schema uses the flexible `Text` data type for fields like `full_name` and `address`, ensuring that all variable-length text data is stored completely without risk of truncation.
+  - This approach ensures data is persistent, structured, and easily accessible for a bank's back-end systems or employees for follow-up.
+  - Unlike the previous version, this system does not store conversation history, focusing solely on the key application data.
+
+-----
 
 ## 🔒 Security & Privacy
 
-- User data stored locally in ChromaDB
-- No external API calls for sensitive data
-- Chat history remains on user's machine
-- Secure input validation and sanitization
+  - User data is stored in a private PostgreSQL database.
+  - The chatbot performs secure input validation.
+  - All sensitive data is handled locally within the Dockerized environment and not sent to external APIs.
+
+-----
 
 ## 🚀 Deployment
 
 ### Local Development
+
 ```bash
+# Set DATABASE_URL if you want to use PostgreSQL on your local machine
 streamlit run app/main.py --server.port 8501
 ```
 
 ### Production with Docker
+
 ```bash
 docker-compose up -d
 ```
 
 ### Cloud Deployment
-- Compatible with Streamlit Cloud
-- Heroku ready with Dockerfile
-- AWS/GCP container deployment
+
+  - The Dockerized setup is ideal for container deployment on platforms like AWS, GCP, or Azure.
+
+-----
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1.  Fork the repository
+2.  Create a feature branch (`git checkout -b feature/amazing-feature`)
+3.  Commit your changes (`git commit -m 'Add amazing feature'`)
+4.  Push to the branch (`git push origin feature/amazing-feature`)
+5.  Open a Pull Request
 
-## 📝 Recent Updates
-
-- ✅ **v2.0** - Added duplicate account prevention
-- ✅ **v2.1** - Implemented chat history persistence
-- ✅ **v2.2** - Updated to Streamlit default + orange theme
-- ✅ **v2.3** - Enhanced form layout and UX
-- ✅ **v2.4** - Fixed confirmation flow and follow-up prompts
-
-**Tsedenawit** - [GitHub](https://github.com/Tsedenawit29)
-
-## 🙏 Acknowledgments
-
-- Streamlit team for the amazing framework
-- ChromaDB for efficient vector storage
-- Open source community for inspiration
-
----
