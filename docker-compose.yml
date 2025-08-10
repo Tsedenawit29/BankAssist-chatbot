@@ -1,17 +1,33 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bank_applications_db
+    ports:
+      - "5432:5432" # Optional: map port to access from host, good for local debugging
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   bankbot:
     build: .
     ports:
       - "8501:8501"
     volumes:
       - .:/app
-      - chroma_storage:/app/chroma_storage
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # New: Pass database connection string as an environment variable
+      - DATABASE_URL=postgresql://user:password@db:5432/bank_applications_db
     env_file:
       - .env
+    depends_on:
+      - db
 
 volumes:
-  chroma_storage: 
+  postgres_data:
+  # Remove the chroma_storage volume as it's no longer needed
