@@ -5,6 +5,13 @@ from db import save_user_data, is_duplicate_contact, init_db
 # Initialize database tables
 init_db()
 
+# Define the reset function
+def reset_chat():
+    """Resets the chat session."""
+    st.session_state.messages = []
+    st.session_state.step = "intent"
+    st.session_state.user_data = {}
+
 # Initialize session state variables
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -62,6 +69,11 @@ st.markdown("""
 # Header
 st.title("🏦 BankAssist Chatbot")
 st.markdown("**Your AI-powered banking assistant** 🤖")
+
+# Add a "New Chat" button below the header
+if st.button("➕ New Chat"):
+    reset_chat()
+    st.rerun()
 
 # Display chat history
 for message in st.session_state.messages:
