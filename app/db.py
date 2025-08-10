@@ -1,120 +1,61 @@
-import chromadb
-import time
 import os
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import datetime
 
-# Ensure storage is persistent with timeout settings
-try:
-    client = chromadb.PersistentClient(
-        path="./chroma_storage",
-        settings=chromadb.Settings(
-            chroma_server_http_port=8000,
-            chroma_server_host="localhost",
-            anonymized_telemetry=False
-        )
-    )
-    collection = client.get_or_create_collection("bank_users")
-except Exception as e:
-    print(f"Database initialization error: {e}")
-    # Fallback to in-memory client if persistent fails
-    client = chromadb.Client()
-    collection = client.get_or_create_collection("bank_users")
+# Read the database URL from the environment variable
+# It will be "postgresql://user:password@db:5432/bank_applications_db" in Docker
+# You can also set a default for local development (e.g., SQLite)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///bank_applications.db")
+
+engine = create_engine(DATABASE_URL)
+Base = declarative_base()
+
+class AccountApplication(Base):
+    __tablename__ = 'account_applications'
+    
+    id = Column(Integer, primary_key=True)
+    full_name = Column(Text, nullable=False)
+    account_type = Column(Text, nullable=False)
+    address = Column(Text, nullable=False)
+    id_number = Column(Text, nullable=False)
+    contact = Column(Text, nullable=False, unique=True, index=True)
+    status = Column(Text, default='Submitted')
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+def init_db():
+    # This will create the table when the app starts
+    Base.metadata.create_all(engine)
+
+# Create a session to interact with the database
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def save_user_data(user_data):
-    """Save user data to the database with retry logic"""
-    max_retries = 3
-    retry_delay = 1
-    
-    for attempt in range(max_retries):
-        try:
-            collection.upsert(
-                documents=[str(user_data)],
-                ids=[user_data["contact"]],
-                metadatas=[user_data]
-            )
-            return True
-        except Exception as e:
-            if attempt < max_retries - 1:
-                print(f"Database save attempt {attempt + 1} failed: {e}. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
-            else:
-                # If all retries failed, try to save to a simple file as backup
-                try:
-                    import json
-                    backup_file = "./backup_users.json"
-                    backup_data = []
-                    
-                    # Load existing backup data
-                    if os.path.exists(backup_file):
-                        with open(backup_file, 'r') as f:
-                            backup_data = json.load(f)
-                    
-                    # Add new user data
-                    backup_data.append(user_data)
-                    
-                    # Save to backup file
-                    with open(backup_file, 'w') as f:
-                        json.dump(backup_data, f, indent=2)
-                    
-                    print(f"Data saved to backup file: {backup_file}")
-                    return True
-                except Exception as backup_error:
-                    raise Exception(f"Database and backup both failed. DB error: {str(e)}, Backup error: {str(backup_error)}")
-
-def user_exists(contact):
-    """Check if a user with this contact (phone/email) already exists"""
+    # ... (the rest of the function remains the same)
+    db = SessionLocal()
     try:
-        # Check by exact contact match
-        result = collection.get(ids=[contact], include=["metadatas"])
-        if result["metadatas"]:
-            return True
-            
-        # Also check if contact exists in any metadata (for better duplicate detection)
-        all_results = collection.get(include=["metadatas"])
-        for metadata in all_results["metadatas"]:
-            if metadata and metadata.get("contact") == contact:
-                return True
-                
-        return False
-    except Exception:
-        return False
-
-def is_duplicate_contact(contact):
-    """Check if phone number or email already exists in the database"""
-    try:
-        # Normalize contact for comparison
-        contact = contact.strip().lower()
-        
-        # Get all users from database
-        all_results = collection.get(include=["metadatas"])
-        
-        for metadata in all_results["metadatas"]:
-            if metadata and "contact" in metadata:
-                existing_contact = metadata["contact"].strip().lower()
-                
-                # Check for exact match
-                if existing_contact == contact:
-                    return True
-                    
-                # Check if it's a phone number (contains only digits, +, -, spaces, parentheses)
-                if contact.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "").isdigit():
-                    # Normalize phone numbers for comparison
-                    normalized_contact = contact.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
-                    normalized_existing = existing_contact.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
-                    if normalized_contact == normalized_existing:
-                        return True
-                        
-        return False
+        new_application = AccountApplication(
+            full_name=user_data['name'],
+            account_type=user_data['account_type'],
+            address=user_data['address'],
+            id_number=user_data['id'],
+            contact=user_data['contact']
+        )
+        db.add(new_application)
+        db.commit()
+        return True
     except Exception as e:
-        print(f"Error checking duplicate contact: {e}")
+        db.rollback()
+        print(f"Error saving data: {e}")
         return False
+    finally:
+        db.close()
 
-def get_user_by_contact(contact):
-    """Get user data by contact information"""
+def is_duplicate_contact(contact_info):
+    # ... (the rest of the function remains the same)
+    db = SessionLocal()
     try:
-        result = collection.get(ids=[contact], include=["metadatas"])
-        if result["metadatas"]:
-            return result["metadatas"][0]
-        return None
-    except Exception:
-        return None
+        existing_application = db.query(AccountApplication).filter_by(contact=contact_info).first()
+        return existing_application is not None
+    finally:
+        db.close()
